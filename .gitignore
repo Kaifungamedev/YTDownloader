@@ -476,7 +476,7 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 *.mp4
-*.ogg
 *.mp3
-*.ogv
+*.og*
 img/
+!tests/coverart/PrinceWhateverer - Smells Like Colt Spirit [COVER].oga

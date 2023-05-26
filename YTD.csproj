@@ -8,6 +8,7 @@
     <SelfContained>true</SelfContained>
     <PublishReadyToRun>true</PublishReadyToRun>
     <AssemblyName>YTD</AssemblyName>
+    <RuntimeIdentifiers>linux-x64;win10-x64;win10-x86;linux-arm64;linux-arm</RuntimeIdentifiers>
   </PropertyGroup>
 
   <ItemGroup>
