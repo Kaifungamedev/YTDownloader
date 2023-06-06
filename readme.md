@@ -8,6 +8,6 @@ YTD (YouTube Downloader) is a cli tool for downlading youtube videos.
 
 ~~--audio........downloads only the audio~~
 > **Note**:  
-> --audio will doenload the file corrupted please see this [issue](https://github.com/Kaifungamedev/YTD/issues/1)  
+> --audio will download the file corrupted please see this [issue](https://github.com/Kaifungamedev/YTD/issues/1)  
 
 -res, --resolution........sets video resolution (default "720p30")
