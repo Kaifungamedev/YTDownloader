@@ -12,11 +12,6 @@ class program
             Console.Title = "YTD";
             var youtube = new YoutubeClient();
             int count = 0;
-            if (args[1] == "ogg" || args[1] == "oga" || args[1] == "ogv")
-            {
-                Console.WriteLine("ogg file format not suported");
-                System.Environment.Exit(1);
-            }
             foreach (var i in args)
             {
                 switch (i)

@@ -26,19 +26,17 @@ public class YTD
     }
     public async Task downloadvideo(string url, string[] args, YoutubeClient youtube, string res = "720p")
     {
+        
         if (resolution != null)
             resolution = res;
         var video = await youtube.Videos.GetAsync(url);
-        VideoId videoId = VideoId.Parse(url);
         var extention = args[1];
-        var streamManifest = await youtube.Videos.Streams.GetManifestAsync(videoId);
+        var streamManifest = await youtube.Videos.Streams.GetManifestAsync(video.Url);
         var fileName = $"{configTitle(video.Title)}.{args[1]}";
         /* This code is getting the audio stream information from the stream manifest for a specific video URL.
         It filters the available audio streams to only include those with the highest bitrate, and then
         selects the resulting audio stream information and stores it in the variable `audioStreamInfo`. */
-        var audioStreamInfo = streamManifest
-            .GetAudioStreams()
-            .GetWithHighestBitrate();
+        var audioStreamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
         /* This code is getting the video stream information from the stream manifest for a specific video URL.
         It filters the available video streams to only include those with a container of WebM, and then
         selects the first stream with a video quality label that matches the specified resolution (res). The
@@ -78,7 +76,7 @@ public class YTD
             System.IO.File.WriteAllBytes(thumbnailpath, thumbnalebytes);
 
             t.setCoverArt(fileName, thumbnailpath);
-            System.IO.File.Delete("icon.jpg");
+            //System.IO.File.Delete("icon.jpg");
 
         }
 
