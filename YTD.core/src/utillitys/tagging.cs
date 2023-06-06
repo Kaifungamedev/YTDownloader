@@ -16,7 +16,7 @@ public class tagger
         // Create a new attachment frame, set its type to FrontCover and add the picture to it
         TagLib.Id3v2.AttachmentFrame albumCoverPictFrame = new TagLib.Id3v2.AttachmentFrame(picture);
         albumCoverPictFrame.MimeType = System.Net.Mime.MediaTypeNames.Image.Jpeg;
-        albumCoverPictFrame.Type = TagLib.PictureType.FrontCover;
+        albumCoverPictFrame.Type = TagLib.PictureType.FileIcon;
 
         // Add the attachment frame to the file's metadata
         file.Tag.Pictures = new TagLib.IPicture[] { albumCoverPictFrame };
