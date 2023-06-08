@@ -23,7 +23,7 @@ class program
                         break;
                     case "-res" or "--resolution":
                         res = args[count + 1];
-                        if (!res.EndsWith("p"))
+                        if (!res.EndsWith("p") && !res.Contains("p"))
                         {
                             res += "p";
                         }
@@ -38,10 +38,8 @@ class program
                 var playlist = youtube.Playlists.GetVideosAsync(args[0]);
                 await foreach (var video in playlist)
                 {
-                    if (!File.Exists($"{ytd.configTitle(video.Title)}.{args[1]}"))
-                    {
+
                         await ytd.downloadvideo(video.Url, args, youtube, res);
-                    }
                 }
             }
         }
