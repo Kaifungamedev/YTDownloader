@@ -4,9 +4,11 @@ namespace YTD.cli;
 
 class program
 {
-    
+
     public static async Task Main(string[] args)
-    {   YTD ytd = new();
+    {
+        YTD ytd = new();
+        string res = "720p";
         if (args.Length >= 2)
         {
             Console.Title = "YTD";
@@ -20,17 +22,17 @@ class program
                         ytd.audio = true;
                         break;
                     case "-res" or "--resolution":
-                        ytd.resolution = args[count + 1];
-                        if (!ytd.resolution.EndsWith("p"))
+                        res = args[count + 1];
+                        if (!res.EndsWith("p"))
                         {
-                            ytd.resolution += "p";
+                            res += "p";
                         }
                         break;
                 }
                 count++;
             }
             if (args[0].Contains("watch?v="))
-                await ytd.downloadvideo(args[0], args, youtube);
+                await ytd.downloadvideo(args[0], args, youtube, res);
             else if (args[0].Contains("playlist?list="))
             {
                 var playlist = youtube.Playlists.GetVideosAsync(args[0]);
@@ -38,10 +40,11 @@ class program
                 {
                     if (!File.Exists($"{ytd.configTitle(video.Title)}.{args[1]}"))
                     {
-                        await ytd.downloadvideo(video.Url, args, youtube);
+                        await ytd.downloadvideo(video.Url, args, youtube, res);
                     }
                 }
             }
         }
+        Console.WriteLine("Done");
     }
 }

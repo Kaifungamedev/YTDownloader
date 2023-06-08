@@ -1,10 +1,7 @@
-﻿using System.Runtime.InteropServices;
-using System.Data;
-using YoutubeExplode.Videos;
-using YoutubeExplode.Videos.Streams;
+﻿using YoutubeExplode.Videos.Streams;
 using YoutubeExplode;
 using YoutubeExplode.Converter;
-using YoutubeExplode.Common;
+using Xabe.FFmpeg;
 namespace YTD;
 
 // This demo prompts for video ID and downloads one media stream.
@@ -20,19 +17,17 @@ public class YTD
         string title = name;
         foreach (string illegalChar in illegalChars)
         {
-            title = title.Replace(illegalChar, "");
+            title = title.Replace(illegalChar, "_");
         }
         return title;
     }
-    public async Task downloadvideo(string url, string[] args, YoutubeClient youtube, string res = "720p")
+    public async Task downloadvideo(string url, string[] args, YoutubeClient youtube, string res = "72060p")
     {
-        
-        if (resolution != null)
-            resolution = res;
         var video = await youtube.Videos.GetAsync(url);
         var extention = args[1];
         var streamManifest = await youtube.Videos.Streams.GetManifestAsync(video.Url);
-        var fileName = $"{configTitle(video.Title)}.{args[1]}";
+        var title = configTitle(video.Title);
+        var fileName = $"{title}.{extention}";
         /* This code is getting the audio stream information from the stream manifest for a specific video URL.
         It filters the available audio streams to only include those with the highest bitrate, and then
         selects the resulting audio stream information and stores it in the variable `audioStreamInfo`. */
@@ -43,19 +38,21 @@ public class YTD
         resulting video stream information is stored in the variable `videoStreamInfo`. */
         var videoStreamInfo = streamManifest
             .GetVideoStreams()
-            .Where(s => s.Container == Container.WebM)
-            .First(s => s.VideoQuality.Label == res);
+            .First(s => s.VideoQuality.Label == "144p");
         var download_res = audio ? "audio" : videoStreamInfo.VideoQuality.Label;
         Console.Write(
-             $"Downloading {video.Title}: {download_res} / {extention} "
-         );
+             $"Downloading {title}: {download_res} / {extention} ");
         using (var progress = new ConsoleProgress())
         {
             if (audio)
             {
                 var stream = await youtube.Videos.Streams.GetAsync(audioStreamInfo);
                 // Download the stream to a file
-                await youtube.Videos.Streams.DownloadAsync(audioStreamInfo, fileName, progress);
+                await youtube.Videos.Streams.DownloadAsync(audioStreamInfo, $"{title}.{audioStreamInfo.Container}.tmp", progress);
+                string outputFileName = $"{title}.{extention}";
+                var conversion = await FFmpeg.Conversions.FromSnippet.Convert($"{title}.{audioStreamInfo.Container}.tmp", outputFileName);
+                await conversion.Start();
+                System.IO.File.Delete($"{title}.{audioStreamInfo.Container}.tmp");
             }
             else
             {
@@ -63,7 +60,7 @@ public class YTD
                 // Download and mux streams into a single file
                 var streamInfos = new IStreamInfo[] { audioStreamInfo, videoStreamInfo };
 
-                await youtube.Videos.DownloadAsync(streamInfos, new ConversionRequestBuilder(fileName).SetPreset(ConversionPreset.VerySlow).Build(), progress);
+                await youtube.Videos.DownloadAsync(streamInfos, new ConversionRequestBuilder(fileName).SetPreset(YoutubeExplode.Converter.ConversionPreset.VerySlow).Build(), progress);
             }
         }
 
@@ -74,14 +71,25 @@ public class YTD
             byte[] thumbnalebytes = await client.GetByteArrayAsync($"https://i.ytimg.com/vi/{video.Id}/mqdefault.jpg");
             string thumbnailpath = "icon.jpg";
             System.IO.File.WriteAllBytes(thumbnailpath, thumbnalebytes);
-
             t.setCoverArt(fileName, thumbnailpath);
-            //System.IO.File.Delete("icon.jpg");
+            bool icon_deleted = false;
+            int tries = 0;
+            while (!icon_deleted && tries <= 5)
+            {
+                try
+                {
+                    System.IO.File.Delete("icon.jpg");
+                    icon_deleted = true;
+
+                }
+                catch (System.UnauthorizedAccessException)
+                {
+                    tries++;
+                }
+            }
+
 
         }
-
-        Console.WriteLine("Done");
-        Console.WriteLine($"Video saved to '{fileName}'");
-
     }
+
 }
