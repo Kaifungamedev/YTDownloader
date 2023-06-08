@@ -24,10 +24,10 @@ public class YTD
     public async Task downloadvideo(string url, string[] args, YoutubeClient youtube, string res = "72060p")
     {
         var video = await youtube.Videos.GetAsync(url);
-        var extention = args[1];
+        var extension = args[1];
         var streamManifest = await youtube.Videos.Streams.GetManifestAsync(video.Url);
         var title = configTitle(video.Title);
-        var fileName = $"{title}.{extention}";
+        var fileName = $"{title}.{extension}";
         /* This code is getting the audio stream information from the stream manifest for a specific video URL.
         It filters the available audio streams to only include those with the highest bitrate, and then
         selects the resulting audio stream information and stores it in the variable `audioStreamInfo`. */
@@ -41,7 +41,7 @@ public class YTD
             .First(s => s.VideoQuality.Label == "144p");
         var download_res = audio ? "audio" : videoStreamInfo.VideoQuality.Label;
         Console.Write(
-             $"Downloading {title}: {download_res} / {extention} ");
+             $"Downloading {title}: {download_res} / {extension} ");
         using (var progress = new ConsoleProgress())
         {
             if (audio)
@@ -49,7 +49,7 @@ public class YTD
                 var stream = await youtube.Videos.Streams.GetAsync(audioStreamInfo);
                 // Download the stream to a file
                 await youtube.Videos.Streams.DownloadAsync(audioStreamInfo, $"{title}.{audioStreamInfo.Container}.tmp", progress);
-                string outputFileName = $"{title}.{extention}";
+                string outputFileName = $"{title}.{extension}";
                 var conversion = await FFmpeg.Conversions.FromSnippet.Convert($"{title}.{audioStreamInfo.Container}.tmp", outputFileName);
                 await conversion.Start();
                 System.IO.File.Delete($"{title}.{audioStreamInfo.Container}.tmp");
