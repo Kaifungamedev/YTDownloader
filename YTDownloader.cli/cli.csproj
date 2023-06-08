@@ -13,12 +13,14 @@
     <RuntimeIdentifiers>linux-x64;win10-x64;win10-x86;linux-arm64;linux-arm</RuntimeIdentifiers>
 
   </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\YTD.core\YTD.csproj" />
-  </ItemGroup>
 
 
   <ItemGroup>
     <PackageReference Include="YoutubeExplode" Version="6.2.15" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <ProjectReference Include="..\YTDownloader.core\YTD.csproj" />
   </ItemGroup>
 </Project>
