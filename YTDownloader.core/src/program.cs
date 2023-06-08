@@ -1,5 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using YoutubeExplode.Videos.Streams;
+﻿using YoutubeExplode.Videos.Streams;
 using YoutubeExplode;
 using YoutubeExplode.Converter;
 using Xabe.FFmpeg;
@@ -11,7 +10,7 @@ namespace YTD;
 // For a more involved example - check out the WPF demo.
 public class YTD
 {
-    public string? resolution;
+    public string resolution;
     string[] audio_formats = { "mp3", "oga", "wav", "flac", "acc", "alac", "wma", "pcm" };
     public bool audio;
     public string configTitle(string name)
@@ -38,77 +37,95 @@ public class YTD
                 audio = true;
             }
         }
-        if (File.Exists(@$"{configTitle(video.Title)}.{args[1]}") == true)
+        /* This code is getting the audio stream information from the stream manifest for a specific video URL.
+        It filters the available audio streams to only include those with the highest bitrate, and then
+        selects the resulting audio stream information and stores it in the variable `audioStreamInfo`. */
+        var audioStreamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
+        /* This code is getting the video stream information from the stream manifest for a specific video URL.
+        It filters the available video streams to only include those with a container of WebM, and then
+        selects the first stream with a video quality label that matches the specified resolution (res). The
+        resulting video stream information is stored in the variable `videoStreamInfo`. */
+        IVideoStreamInfo videoStreamInfo = null;
+        try
         {
-            
-            return;
-        }
-            /* This code is getting the audio stream information from the stream manifest for a specific video URL.
-            It filters the available audio streams to only include those with the highest bitrate, and then
-            selects the resulting audio stream information and stores it in the variable `audioStreamInfo`. */
-            var audioStreamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
-            /* This code is getting the video stream information from the stream manifest for a specific video URL.
-            It filters the available video streams to only include those with a container of WebM, and then
-            selects the first stream with a video quality label that matches the specified resolution (res). The
-            resulting video stream information is stored in the variable `videoStreamInfo`. */
-            var videoStreamInfo = streamManifest
+            videoStreamInfo = streamManifest
                 .GetVideoStreams()
                 .First(s => s.VideoQuality.Label == res);
-            var download_res = audio ? "audio" : videoStreamInfo.VideoQuality.Label;
-            Console.Write(
-                 $"Downloading: {title} {download_res} / {extension} ");
-            using (var progress = new ConsoleProgressBar
+
+        }
+        catch (Exception)
+        {
+
+            if (!audio)
             {
-                DisplayBars = false,
-                AnimationSequence = UniversalProgressAnimations.PulsingLine,
-                ForegroundColor = ConsoleColor.Red
-            })
+                Console.WriteLine(" unable to find video stream skiping");
+                return;
+            }
+        }
+        var download_res = audio ? "audio" : videoStreamInfo.VideoQuality.Label;
+        Console.Write(
+             $"Downloading: {title} {download_res} / {extension} ");
+        using (var progress = new ConsoleProgressBar
+        {
+            DisplayBars = false,
+            AnimationSequence = UniversalProgressAnimations.PulsingLine,
+            ForegroundColor = ConsoleColor.Red
+        })
+        {
+            if (audio)
             {
-                if (audio)
+                var stream = await youtube.Videos.Streams.GetAsync(audioStreamInfo);
+                // Download the stream to a file
+                await youtube.Videos.Streams.DownloadAsync(audioStreamInfo, $"{title}.{audioStreamInfo.Container}.tmp", progress);
+                string outputPath = $"{title}.{extension}";
+                var mediaInfo = await FFmpeg.GetMediaInfo($@"{title}.{audioStreamInfo.Container}.tmp");
+                try
                 {
-                    var stream = await youtube.Videos.Streams.GetAsync(audioStreamInfo);
-                    // Download the stream to a file
-                    await youtube.Videos.Streams.DownloadAsync(audioStreamInfo, $"{title}.{audioStreamInfo.Container}.tmp", progress);
-                    string outputFileName = $"{title}.{extension}";
-                    var conversion = await FFmpeg.Conversions.FromSnippet.Convert($"{title}.{audioStreamInfo.Container}.tmp", outputFileName);
-                    await conversion.Start();
+                    var conversion = await FFmpeg.Conversions.New().AddStream(mediaInfo.Streams).SetOutput(outputPath).Start();
                     System.IO.File.Delete($"{title}.{audioStreamInfo.Container}.tmp");
                 }
-                else
+                catch (Xabe.FFmpeg.Exceptions.ConversionException)
                 {
-
-                    // Download and mux streams into a single file
-                    var streamInfos = new IStreamInfo[] { audioStreamInfo, videoStreamInfo };
-
-                    await youtube.Videos.DownloadAsync(streamInfos, new ConversionRequestBuilder(fileName).SetPreset(YoutubeExplode.Converter.ConversionPreset.VerySlow).Build(), progress);
-                }
-                tagger t = new();
-                using (var client = new HttpClient())
-                {
-                    byte[] thumbnalebytes = await client.GetByteArrayAsync($"https://i.ytimg.com/vi/{video.Id}/mqdefault.jpg");
-                    string thumbnailpath = "icon.jpg";
-                    System.IO.File.WriteAllBytes(thumbnailpath, thumbnalebytes);
-                    t.setCoverArt(fileName, thumbnailpath);
-                    bool icon_deleted = false;
-                    int tries = 0;
-                    while (!icon_deleted && tries <= 5)
-                    {
-                        try
-                        {
-                            System.IO.File.Delete("icon.jpg");
-                            icon_deleted = true;
-
-                        }
-                        catch (System.UnauthorizedAccessException)
-                        {
-                            tries++;
-                        }
-                    }
-
-
+                    Console.WriteLine("Unable to convert");
+                    System.IO.File.Move($"{title}.{audioStreamInfo.Container}.tmp",
+                        $"{title}.{audioStreamInfo.Container}");
                 }
             }
-            Console.WriteLine();
-        }
+            else
+            {
 
+                // Download and mux streams into a single file
+                var streamInfos = new IStreamInfo[] { audioStreamInfo, videoStreamInfo };
+
+                await youtube.Videos.DownloadAsync(streamInfos, new ConversionRequestBuilder(fileName).SetPreset(YoutubeExplode.Converter.ConversionPreset.VerySlow).Build(), progress);
+            }
+            tagger t = new();
+            using (var client = new HttpClient())
+            {
+                byte[] thumbnalebytes = await client.GetByteArrayAsync($"https://i.ytimg.com/vi/{video.Id}/mqdefault.jpg");
+                string thumbnailpath = "icon.jpg";
+                System.IO.File.WriteAllBytes(thumbnailpath, thumbnalebytes);
+                t.setCoverArt(fileName, thumbnailpath);
+                bool icon_deleted = false;
+                int tries = 0;
+                while (!icon_deleted && tries <= 5)
+                {
+                    try
+                    {
+                        System.IO.File.Delete("icon.jpg");
+                        icon_deleted = true;
+
+                    }
+                    catch (System.UnauthorizedAccessException)
+                    {
+                        tries++;
+                    }
+                }
+
+
+            }
+        }
+        Console.WriteLine();
     }
+
+}
