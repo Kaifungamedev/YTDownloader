@@ -53,12 +53,20 @@ public class YTD
                 .First(s => s.VideoQuality.Label == res);
 
         }
-        catch (Exception)
+        catch (System.InvalidOperationException ex)
+        {
+            if (!audio)
+            {
+                Console.WriteLine($"ERROR (likely to do unsupported fps) {ex.Message}");
+                return;
+            }
+        }
+        catch (Exception ex)
         {
 
             if (!audio)
             {
-                Console.WriteLine(" unable to find video stream skiping");
+                Console.WriteLine($" unable to find video stream skiping {ex}");
                 return;
             }
         }
