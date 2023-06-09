@@ -1,5 +1,6 @@
 ﻿using YoutubeExplode.Videos.Streams;
 using YoutubeExplode;
+using YoutubeExplode.Common;
 using YoutubeExplode.Converter;
 using Xabe.FFmpeg;
 using Luna.ConsoleProgressBar;
@@ -110,7 +111,7 @@ public class YTD
             tagger t = new();
             using (var client = new HttpClient())
             {
-                byte[] thumbnalebytes = await client.GetByteArrayAsync($"https://i.ytimg.com/vi/{video.Id}/mqdefault.jpg");
+                byte[] thumbnalebytes = await client.GetByteArrayAsync($"https://i.ytimg.com/vi/{video.Id}/hqdefault.jpg");
                 string thumbnailpath = "icon.jpg";
                 System.IO.File.WriteAllBytes(thumbnailpath, thumbnalebytes);
                 t.setCoverArt(fileName, thumbnailpath);
