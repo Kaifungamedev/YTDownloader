@@ -108,7 +108,7 @@ public class YTD
 
                 await youtube.Videos.DownloadAsync(streamInfos, new ConversionRequestBuilder(fileName).SetPreset(YoutubeExplode.Converter.ConversionPreset.VerySlow).Build(), progress);
             }
-            tagger t = new();
+            Tagger t = new();
             using (var client = new HttpClient())
             {
                 byte[] thumbnalebytes = await client.GetByteArrayAsync($"https://i.ytimg.com/vi/{video.Id}/hqdefault.jpg");

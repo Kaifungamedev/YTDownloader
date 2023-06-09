@@ -3,7 +3,7 @@ using TagLib;
 
 namespace YTD;
 
-public class tagger
+public class Tagger
 {
     public void setCoverArt(string filePath, string imagePath)
     {
