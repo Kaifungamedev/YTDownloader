@@ -9,7 +9,6 @@ namespace YTD.Updater
         public static async Task Main(string[] args)
         {
             var cli = new Cli();
-            var osinfo = Environment.OSVersion;
             FileVersionInfo YTDinfo = FileVersionInfo.GetVersionInfo("YTD.dll");
             string[] YTDversion = YTDinfo.ProductVersion.Split('.');
             var repo = new GitHubClient(new ProductHeaderValue("YTDownloader"));

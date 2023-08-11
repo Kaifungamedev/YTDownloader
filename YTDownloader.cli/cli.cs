@@ -1,15 +1,51 @@
 ﻿using YoutubeExplode;
+using Tomlyn.Model;
+using Tomlyn;
+using System.Reflection;
+
 namespace YTD.cli
 {
 
     public class Cli
     {
+        YTD ytd = new();
+        readonly string exePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        string res = "720p";
+        readonly string Playlistfile = "playlist.toml";
 
+        async Task SavePlaylist(string name, string url)
+        {
+            await File.AppendAllLinesAsync(Playlistfile, new[] { $"\n[{ytd.ConfigTitle(name).Replace(' ', '_')}]\nurl = '{url}'" });
+            Console.WriteLine(name);
+        }
         public async Task cli(string[] args)
         {
-            YTD ytd = new();
-            string res = "720p";
-            string[] audio_formats = { "mp3", "oga", "wav", "flac", "acc", "alac", "wma", "pcm" };
+            if (!File.Exists(Path.Join(exePath, "playlist.toml")))
+            {
+                try
+                {
+                    File.Create(Path.Join(exePath, "playlist.toml")).Dispose();
+                }
+                catch { Console.WriteLine($"unable to make playlist file plese make a file named 'playlist.toml' at '{exePath}'"); }
+            }
+            else
+            {
+                Console.WriteLine(
+                "toml file found"
+            );
+            }
+            // Read the file contents
+            string toml = File.ReadAllText(Playlistfile);
+            // Parse the contents into a TomlTable object
+            var model = Toml.ToModel(toml);
+
+            string url = args[0];
+            try
+            {
+                url = ((TomlTable)model[url]!)["url"].ToString();
+
+            }
+            catch { Console.WriteLine("unable to find url"); }
             if (args.Length >= 2)
             {
                 Console.Title = "YTDownloader";
@@ -29,13 +65,31 @@ namespace YTD.cli
                                 res += "p";
                             }
                             break;
+                        case "--save" or "-s":
+                            if (url.Contains("playlist?list="))
+                            {
+                                var playlist = await youtube.Playlists.GetAsync(url);
+                                var title = playlist.Title;
+                                try
+                                {
+                                    if (((TomlTable)model[title]!).ToString() == null)
+                                    {
+                                        await SavePlaylist(title, url);
+                                    }
+                                }
+                                catch (System.Collections.Generic.KeyNotFoundException)
+                                {
+                                    await SavePlaylist(title, url);
+                                }
+                            }
+                            break;
                     }
                     count++;
                 }
                 if (!ytd.audio)
                 {
 
-                    foreach (var item in audio_formats)
+                    foreach (var item in ytd.audio_formats)
                     {
 
                         if (args[1] == item)
@@ -44,28 +98,28 @@ namespace YTD.cli
                         }
                     }
                 }
-
-                if (args[0].Contains("watch?v="))
-                    await ytd.downloadvideo(args[0], args, youtube, res);
-                else if (args[0].Contains("playlist?list="))
+                if (url.Contains("watch?v="))
+                    await ytd.Downloadvideo(url, args, youtube, res);
+                else if (url.Contains("playlist?list="))
                 {
-                    var playlist = youtube.Playlists.GetVideosAsync(args[0]);
-                    var playlist_data = await youtube.Playlists.GetAsync(args[0]);
+                    var playlist = youtube.Playlists.GetVideosAsync(url);
+                    var playlist_data = await youtube.Playlists.GetAsync(url);
                     Console.WriteLine(playlist_data.Title);
                     int index = 1;
                     await foreach (var video in playlist)
                     {
-                        if (!File.Exists(@$"{ytd.configTitle(video.Title)}.{args[1]}"))
+                        if (!File.Exists(@$"{ytd.ConfigTitle(video.Title)}.{args[1]}"))
                         {
                             Console.Write(index + " ");
-                            await ytd.downloadvideo(video.Url, args, youtube, res);
+                            await ytd.Downloadvideo(video.Url, args, youtube, res);
                         }
                         index++;
                     }
                 }
                 Console.WriteLine("Done");
+
             }
-            else if (args.Length >= 0 || (args[0] == "-h" || args[0] == "-help"))
+            else if (args.Length >= 0 || url == "-h" || url == "-help")
             {
 
                 Console.WriteLine("path/to/YoutubeD <'youtube url in quotes'> <file extension> [optional args]");

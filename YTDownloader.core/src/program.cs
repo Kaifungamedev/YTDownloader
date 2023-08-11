@@ -6,15 +6,23 @@ using Xabe.FFmpeg;
 using Luna.ConsoleProgressBar;
 namespace YTD;
 
-// This demo prompts for video ID and downloads one media stream.
-// It's intended to be very simple and straight to the point.
-// For a more involved example - check out the WPF demo.
+
 public class YTD
 {
     public string resolution;
-    string[] audio_formats = { "mp3", "oga", "wav", "flac", "acc", "alac", "wma", "pcm" };
+    public readonly string[] audio_formats = { "mp3", "oga", "wav", "flac", "acc", "alac", "wma", "pcm" };
     public bool audio;
-    public string configTitle(string name)
+    /// <summary>
+    /// The function `configTitle` takes a string `name` as input and replaces any illegal characters with
+    /// underscores, then returns the modified string.
+    /// </summary>
+    /// <param name="name">The name parameter is a string that represents the title of a
+    /// configuration.</param>
+    /// <returns>
+    /// The method is returning a string that has replaced any illegal characters in the input name with
+    /// underscores.
+    /// </returns>
+    public string ConfigTitle(string name)
     {
         string[] illegalChars = { "<", ">", ":", "\"", "/", "\\", "|", "?", "*" };
         string title = name;
@@ -24,13 +32,18 @@ public class YTD
         }
         return title;
     }
-    public async Task downloadvideo(string url, string[] args, YoutubeClient youtube, string res = "72060p")
+    public async Task Downloadvideo(string url, string[] args, YoutubeClient youtube, string res = "720p")
     {
         var video = await youtube.Videos.GetAsync(url);
         var extension = args[1];
         var streamManifest = await youtube.Videos.Streams.GetManifestAsync(video.Url);
-        var title = configTitle(video.Title);
+        
+        var title = ConfigTitle(video.Title);
+        // Name of output file
         var fileName = $"{title}.{extension}";
+        /* The code is iterating through each item in the `audio_formats` array. It checks if the `extension`
+        variable is equal to the current item in the iteration. If it is, it sets the `audio` variable to
+        `true`. This code is used to determine if the file extension corresponds to an audio format. */
         foreach (var item in audio_formats)
         {
             if (extension == item)
@@ -54,7 +67,7 @@ public class YTD
                 .First(s => s.VideoQuality.Label == res);
 
         }
-        catch (System.InvalidOperationException ex)
+        catch (InvalidOperationException ex)
         {
             if (!audio)
             {
@@ -91,12 +104,12 @@ public class YTD
                 try
                 {
                     var conversion = await FFmpeg.Conversions.New().AddStream(mediaInfo.Streams).SetOutput(outputPath).Start();
-                    System.IO.File.Delete($"{title}.{audioStreamInfo.Container}.tmp");
+                    File.Delete($"{title}.{audioStreamInfo.Container}.tmp");
                 }
                 catch (Xabe.FFmpeg.Exceptions.ConversionException)
                 {
                     Console.WriteLine("Unable to convert");
-                    System.IO.File.Move($"{title}.{audioStreamInfo.Container}.tmp",
+                    File.Move($"{title}.{audioStreamInfo.Container}.tmp",
                         $"{title}.{audioStreamInfo.Container}");
                 }
             }
@@ -109,29 +122,25 @@ public class YTD
                 await youtube.Videos.DownloadAsync(streamInfos, new ConversionRequestBuilder(fileName).SetPreset(YoutubeExplode.Converter.ConversionPreset.VerySlow).Build(), progress);
             }
             Tagger t = new();
-            using (var client = new HttpClient())
+            using var client = new HttpClient();
+            byte[] thumbnalebytes = await client.GetByteArrayAsync($"https://i.ytimg.com/vi/{video.Id}/hqdefault.jpg");
+            string thumbnailpath = "icon.jpg";
+            File.WriteAllBytes(thumbnailpath, thumbnalebytes);
+            t.SetCoverArt(fileName, thumbnailpath);
+            bool icon_deleted = false;
+            int tries = 0;
+            while (!icon_deleted && tries <= 5)
             {
-                byte[] thumbnalebytes = await client.GetByteArrayAsync($"https://i.ytimg.com/vi/{video.Id}/hqdefault.jpg");
-                string thumbnailpath = "icon.jpg";
-                System.IO.File.WriteAllBytes(thumbnailpath, thumbnalebytes);
-                t.setCoverArt(fileName, thumbnailpath);
-                bool icon_deleted = false;
-                int tries = 0;
-                while (!icon_deleted && tries <= 5)
+                try
                 {
-                    try
-                    {
-                        System.IO.File.Delete("icon.jpg");
-                        icon_deleted = true;
+                    File.Delete("icon.jpg");
+                    icon_deleted = true;
 
-                    }
-                    catch (System.UnauthorizedAccessException)
-                    {
-                        tries++;
-                    }
                 }
-
-
+                catch (UnauthorizedAccessException)
+                {
+                    tries++;
+                }
             }
         }
         Console.WriteLine();

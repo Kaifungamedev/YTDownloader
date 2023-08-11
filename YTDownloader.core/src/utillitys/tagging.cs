@@ -5,7 +5,7 @@ namespace YTD;
 
 public class Tagger
 {
-    public void setCoverArt(string filePath, string imagePath)
+    public void SetCoverArt(string filePath, string imagePath)
     {
         // Load the file
         TagLib.File file = TagLib.File.Create(filePath);
