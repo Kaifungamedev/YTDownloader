@@ -11,15 +11,14 @@ namespace YTD.cli
         YTD ytd = new();
         readonly string exePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         string res = "720p";
-        readonly string Playlistfile = "playlist.toml";
+        string Playlistfile;
 
         async Task SavePlaylist(string name, string url)
         {
             await File.AppendAllLinesAsync(Playlistfile, new[] { $"\n[{ytd.ConfigTitle(name).Replace(' ', '_')}]\nurl = '{url}'" });
-            Console.WriteLine(name);
         }
         public async Task cli(string[] args)
-        {
+        {   Playlistfile = Path.Join(exePath, "playlist.toml");
             if (!File.Exists(Path.Join(exePath, "playlist.toml")))
             {
                 try
